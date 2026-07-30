@@ -3,17 +3,11 @@ local guiName = "AstralKeySystem"
 
 if coreGui:FindFirstChild(guiName) then coreGui[guiName]:Destroy() end
 
--- ⚙️ โหลดโมดูล KeyAuth และตั้งค่า API
-local KeyAuth = loadstring(game:HttpGet("https://raw.githubusercontent.com/KeyAuth/KeyAuth-Roblox-Lua/main/KeyAuth.lua"))()
-
--- 📌 นำข้อมูลจากหน้า Dashboard ของคุณมาใส่ตรงนี้ครับ:
-KeyAuth.api.name = "Zawarrt1's Application"       -- ชื่อแอปของคุณ
-KeyAuth.api.ownerid = "2Mrf5YKuu2"     -- Account Owner ID (จากช่องที่ 2)
-KeyAuth.api.secret = "7e7d19408ad2e54444ca91cc9910aca28f8820caa6da7b57d6544d1a9baacde3"  -- Application Secret (จากช่องที่ 3)
-KeyAuth.api.version = "1.0" 
-
--- เริ่มต้นระบบเชื่อมต่อ KeyAuth
-KeyAuth.api:init()
+local validKeys = {
+    ["KEYAUTH-mcLvht-JcISvk-YMYnJP-s4RCB8-ZD0JUj-efpTTc"] = true,
+    ["ASTRAL-VIP-001"] = true,
+    ["ASTRAL-VIP-002"] = true
+}
 
 -- 🎨 สร้างหน้าต่าง UI กรอก Key
 local screenGui = Instance.new("ScreenGui", coreGui)
@@ -63,9 +57,9 @@ submitBtn.MouseButton1Down:Connect(function()
     local userKey = keyInput.Text
     submitBtn.Text = "กำลังตรวจสอบ..."
     
-    local isValid = KeyAuth.api:license(userKey)
+    task.wait(0.5)
     
-    if isValid then
+    if validKeys[userKey] then
         submitBtn.Text = "✅ Key ถูกต้อง! กำลังโหลด..."
         submitBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
         task.wait(1)
@@ -81,9 +75,9 @@ submitBtn.MouseButton1Down:Connect(function()
             warn("Astral Hub Error: ", err)
         end
     else
-        submitBtn.Text = "❌ " .. tostring(KeyAuth.api.message)
+        submitBtn.Text = "❌ Key ไม่ถูกต้อง!"
         submitBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-        task.wait(2)
+        task.wait(1.5)
         submitBtn.Text = "ตรวจสอบ Key"
         submitBtn.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
     end

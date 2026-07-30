@@ -4,9 +4,9 @@ local guiName = "AstralKeySystem"
 if coreGui:FindFirstChild(guiName) then coreGui[guiName]:Destroy() end
 
 local validKeys = {
-    ["KEYAUTH-mcLvht-JcISvk-YMYnJP-s4RCB8-ZD0JUj-efpTTc"] = true,
-    ["ASTRAL-VIP-001"] = true,
-    ["ASTRAL-VIP-002"] = true
+[string.char(75, 69, 89, 65, 85, 84, 72, 45, 109, 99, 76, 118, 104, 116, 45, 74, 99, 73, 83, 118, 107, 45, 89, 77, 89, 110, 74, 80, 45, 115, 52, 82, 67, 66, 56, 45, 90, 68, 48, 74, 85, 106, 45, 101, 102, 112, 84, 84, 99)] = true,
+[string.char(65, 83, 84, 82, 65, 76, 45, 86, 73, 80, 45, 48, 48, 49)] = true,
+[string.char(65, 83, 84, 82, 65, 76, 45, 86, 73, 80, 45, 48, 48, 50)] = true
 }
 
 -- 🎨 สร้างหน้าต่าง UI กรอก Key

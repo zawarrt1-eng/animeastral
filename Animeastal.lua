@@ -1,32 +1,23 @@
--- ==========================================
--- 👑 AUTO FARM: ANIME ASTRAL (V39 - Lobby Smart Pause)
--- ==========================================
 local coreGui = game:GetService("CoreGui")
 local player = game:GetService("Players").LocalPlayer
 local workspace = game:GetService("Workspace")
 local vim = game:GetService("VirtualInputManager") 
 local runService = game:GetService("RunService")
 
-local guiName = "AnimeAstralHub"
+local guiName = "AnimeAstralByTest"
 
--- 🛑 ระยะปลอดภัย
-local MAX_ROOM_RADIUS = 400 -- ระยะหามอนสเตอร์
-local MAX_DUNGEON_RADIUS = 2000 -- ระยะเช็คว่าเราอยู่ในดันเจี้ยนหรืออยู่เมือง
+local MAX_ROOM_RADIUS = 400 
+local MAX_DUNGEON_RADIUS = 2000 
 
 local states = {
     CursedRush = false,
     AutoCollect = false,
-    ExpFarm = false,
     AutoClick = false,
-    StandPos = nil,
-    PointA = nil,
-    PointB = nil,
-    CurrentExpTarget = "A"
+    StandPos = nil
 }
 
 if coreGui:FindFirstChild(guiName) then coreGui[guiName]:Destroy() end
 
--- 🛡️ Anti-AFK
 task.spawn(function()
     while true do
         task.wait(300)
@@ -38,7 +29,6 @@ task.spawn(function()
     end
 end)
 
--- 🖱️ Auto Click
 task.spawn(function()
     while task.wait() do 
         if states.AutoClick then
@@ -72,7 +62,6 @@ local function getMyPosition()
     return nil
 end
 
--- 🗺️ ระบบเช็คว่าเราอยู่ในดันเจี้ยนหรือไม่ (ถ้าอยู่เมืองจะ return false)
 local function isInDungeon()
     local myPos = getMyPosition()
     if not myPos then return false end
@@ -81,7 +70,6 @@ local function isInDungeon()
     if arenas then
         for _, room in ipairs(arenas:GetChildren()) do
             local refPart = room:FindFirstChildWhichIsA("BasePart", true)
-            -- ถ้าตัวเราอยู่ใกล้โครงสร้างของดันเจี้ยน แปลว่าไม่ได้อยู่เมือง
             if refPart and (refPart.Position - myPos).Magnitude <= MAX_DUNGEON_RADIUS then
                 return true
             end
@@ -165,21 +153,6 @@ local function getBestVisualMob()
     return bestMob
 end
 
--- 🌟 หามอนสำหรับ EXP Farm
-local function getMobNearPoint(pointCFrame, radius)
-    if not pointCFrame then return nil end
-    for _, obj in pairs(workspace:GetChildren()) do
-        if obj:IsA("Model") and isAlive(obj) and obj.Name ~= player.Name then
-            local root = obj:FindFirstChild("HumanoidRootPart")
-            if root then
-                local dist = (root.Position - pointCFrame.Position).Magnitude
-                if dist <= radius then return obj end
-            end
-        end
-    end
-    return nil
-end
-
 local isHoldingE = false
 local currentPrompt = nil
 local currentTargetFinger = nil 
@@ -195,7 +168,6 @@ local function releaseE()
     end
 end
 
--- ⚡ ระบบฟาร์มหลัก: Cursed Rush & Auto Collect
 if _G.FarmLoop then _G.FarmLoop:Disconnect() end
 
 _G.FarmLoop = runService.Heartbeat:Connect(function()
@@ -207,7 +179,6 @@ _G.FarmLoop = runService.Heartbeat:Connect(function()
         local rootPart = char:FindFirstChild("HumanoidRootPart")
         if not rootPart then return end
 
-        -- 🛑 ถ้าอยู่เมือง (Lobby) ให้ข้ามการวาปไปเลย เพื่อให้ Auto Rejoin ดึงเข้าดันได้
         if not isInDungeon() then
             releaseE()
             return 
@@ -216,7 +187,6 @@ _G.FarmLoop = runService.Heartbeat:Connect(function()
         local boss = getBoss()
         local finger = getFinger()
 
-        -- เก็บนิ้ว (เฉพาะตอนอยู่ในดัน)
         if states.AutoCollect and finger then
             local fingerPart = finger:IsA("BasePart") and finger or finger:FindFirstChildWhichIsA("BasePart")
             if fingerPart then
@@ -248,7 +218,6 @@ _G.FarmLoop = runService.Heartbeat:Connect(function()
             end
         end
 
-        -- โหมด Cursed Rush (ทำงานเฉพาะตอนอยู่ในดัน)
         if states.CursedRush then
             if boss then
                 releaseE()
@@ -262,7 +231,6 @@ _G.FarmLoop = runService.Heartbeat:Connect(function()
                     local mobPart = activeMob:FindFirstChild("HumanoidRootPart") or activeMob.PrimaryPart
                     if mobPart then rootPart.CFrame = mobPart.CFrame * CFrame.new(0, 0, 3.5) end
                 else
-                    -- เช็คระยะ StandPos ถ้าไกลเกินไปแสดงว่าแมพบังคับย้าย ไม่ต้องดึงกลับ (ป้องกันบัค)
                     if states.StandPos then
                         local distToStand = (rootPart.Position - states.StandPos.Position).Magnitude
                         if distToStand > 3 and distToStand < 1000 then 
@@ -277,46 +245,16 @@ _G.FarmLoop = runService.Heartbeat:Connect(function()
     end)
 end)
 
--- 🌟 ระบบฟาร์มรอง: EXP Farm
-task.spawn(function()
-    while task.wait(0.05) do
-        pcall(function()
-            if states.ExpFarm then
-                local char = player.Character
-                if not char then return end
-                local rootPart = char:FindFirstChild("HumanoidRootPart")
-                if not rootPart then return end
-
-                releaseE()
-                if states.PointA and states.PointB then
-                    local targetPoint = (states.CurrentExpTarget == "A") and states.PointA or states.PointB
-                    local targetMob = getMobNearPoint(targetPoint, 100)
-
-                    if targetMob then
-                        local mobPart = targetMob:FindFirstChildWhichIsA("BasePart")
-                        if mobPart then rootPart.CFrame = mobPart.CFrame * CFrame.new(0, 4, 4) end
-                    else
-                        states.CurrentExpTarget = (states.CurrentExpTarget == "A") and "B" or "A"
-                        local newTarget = (states.CurrentExpTarget == "A") and states.PointA or states.PointB
-                        rootPart.CFrame = newTarget
-                        task.wait(0.5) 
-                    end
-                end
-            end
-        end)
-    end
-end)
-
 -- ==========================================
--- 🎨 สร้างหน้าต่าง UI (ส่วนเดิม)
+-- 🎨 สร้างหน้าต่าง UI (ปรับเหลือ 2 แท็บ)
 -- ==========================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = guiName
 screenGui.Parent = coreGui 
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 300, 0, 300)
-frame.Position = UDim2.new(0.5, -150, 0.5, -150)
+frame.Size = UDim2.new(0, 300, 0, 260)
+frame.Position = UDim2.new(0.5, -150, 0.5, -130)
 frame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
 frame.BorderSizePixel = 0
 frame.Active = true
@@ -399,12 +337,11 @@ end
 local tabs = {}
 local pages = {}
 
-tabs[1], pages[1] = createTab("🗡️ Cursed", 1, 3)
-tabs[2], pages[2] = createTab("🌟 EXP", 2, 3)
-tabs[3], pages[3] = createTab("⚙️ Settings", 3, 3)
+tabs[1], pages[1] = createTab("🗡️ Cursed", 1, 2)
+tabs[2], pages[2] = createTab("⚙️ Settings", 2, 2)
 
 local function switchTab(index)
-    for i = 1, 3 do
+    for i = 1, 2 do
         tabs[i].BackgroundColor3 = (i == index) and Color3.fromRGB(255, 180, 50) or Color3.fromRGB(40, 40, 50)
         tabs[i].TextColor3 = (i == index) and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(200, 200, 200)
         pages[i].Visible = (i == index)
@@ -413,7 +350,6 @@ end
 
 tabs[1].MouseButton1Down:Connect(function() switchTab(1) end)
 tabs[2].MouseButton1Down:Connect(function() switchTab(2) end)
-tabs[3].MouseButton1Down:Connect(function() switchTab(3) end)
 
 local function createBtn(parent, text, posY, color, callback)
     local btn = Instance.new("TextButton", parent)
@@ -461,29 +397,16 @@ local function createToggle(parent, text, posY, stateKey, exclusiveKey)
     end)
 end
 
--- Tab 1: Cursed
 createBtn(pages[1], "📍 Set Stand (จุดยืนรอ)", 10, Color3.fromRGB(60, 120, 200), function()
     local c = player.Character if c and c:FindFirstChild("HumanoidRootPart") then states.StandPos = c.HumanoidRootPart.CFrame end
 end)
-createToggle(pages[1], "🚀 Cursed Rush (ตีมอนในแมพ)", 50, "CursedRush", "ExpFarm")
+createToggle(pages[1], "🚀 Cursed Rush (ตีมอนในแมพ)", 50, "CursedRush", nil)
 createToggle(pages[1], "🖐️ Auto Collect (เก็บนิ้วก่อนตี)", 90, "AutoCollect", nil)
 
--- Tab 2: EXP
-createBtn(pages[2], "📍 Set Point A (จุดที่ 1)", 10, Color3.fromRGB(150, 60, 200), function()
-    local c = player.Character if c and c:FindFirstChild("HumanoidRootPart") then states.PointA = c.HumanoidRootPart.CFrame print("ตั้งจุด A แล้ว!") end
-end)
-createBtn(pages[2], "📍 Set Point B (จุดที่ 2)", 50, Color3.fromRGB(200, 60, 100), function()
-    local c = player.Character if c and c:FindFirstChild("HumanoidRootPart") then states.PointB = c.HumanoidRootPart.CFrame print("ตั้งจุด B แล้ว!") end
-end)
-createToggle(pages[2], "🌟 Auto EXP Farm (สลับตี)", 90, "ExpFarm", "CursedRush")
-
--- Tab 3: Settings
-createToggle(pages[3], "🖱️ Auto Click (ออโต้คลิก)", 10, "AutoClick", nil)
-createBtn(pages[3], "🗑️ Clear All Positions", 50, Color3.fromRGB(200, 50, 50), function()
+createToggle(pages[2], "🖱️ Auto Click (ออโต้คลิก)", 10, "AutoClick", nil)
+createBtn(pages[2], "🗑️ Clear Stand Position", 50, Color3.fromRGB(200, 50, 50), function()
     states.StandPos = nil
-    states.PointA = nil
-    states.PointB = nil
-    print("❌ ล้างค่าการตั้งค่าทั้งหมดแล้ว!")
+    print("❌ ล้างค่าจุดยืนรอแล้ว!")
 end)
 
 print("✅ Astral Farm V39 (Smart Lobby Pause) Loaded!")

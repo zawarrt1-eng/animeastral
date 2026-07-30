@@ -1,17 +1,23 @@
 local coreGui = game:GetService("CoreGui")
-local keyGuiName = "AstralKeySystem"
+local guiName = "AstralKeySystem"
 
--- ลียร์ UI เก่าทิ้งถ้ามีการรันซ้ำ
-if coreGui:FindFirstChild(keyGuiName) then coreGui[keyGuiName]:Destroy() end
+if coreGui:FindFirstChild(guiName) then coreGui[guiName]:Destroy() end
 
--- ==========================================
--- 🔑 ตั้งค่า KEY ของคุณตรงนี้ (Hardcoded สำหรับตอนนี้)
--- ==========================================
-local correctKey = "ASTRAL-2026-VIP" 
+-- ⚙️ โหลดโมดูล KeyAuth และตั้งค่า API
+local KeyAuth = loadstring(game:HttpGet("https://raw.githubusercontent.com/KeyAuth/KeyAuth-Roblox-Lua/main/KeyAuth.lua"))()
 
--- 🎨 สร้าง UI หน้าต่างกรอก Key
+-- 📌 นำข้อมูลจากหน้า Dashboard ของคุณมาใส่ตรงนี้ครับ:
+KeyAuth.api.name = "Zawarrt1's Application"       -- ชื่อแอปของคุณ
+KeyAuth.api.ownerid = "2Mrf5YKuu2"     -- Account Owner ID (จากช่องที่ 2)
+KeyAuth.api.secret = "7e7d19408ad2e54444ca91cc9910aca28f8820caa6da7b57d6544d1a9baacde3"  -- Application Secret (จากช่องที่ 3)
+KeyAuth.api.version = "1.0" 
+
+-- เริ่มต้นระบบเชื่อมต่อ KeyAuth
+KeyAuth.api:init()
+
+-- 🎨 สร้างหน้าต่าง UI กรอก Key
 local screenGui = Instance.new("ScreenGui", coreGui)
-screenGui.Name = keyGuiName
+screenGui.Name = guiName
 
 local frame = Instance.new("Frame", screenGui)
 frame.Size = UDim2.new(0, 300, 0, 150)
@@ -52,28 +58,32 @@ submitBtn.Font = Enum.Font.GothamBold
 submitBtn.TextSize = 13
 Instance.new("UICorner", submitBtn).CornerRadius = UDim.new(0, 4)
 
--- ⚙️ ระบบตรวจสอบ Key
+-- 🔒 ระบบตรวจสอบ Key
 submitBtn.MouseButton1Down:Connect(function()
-    if keyInput.Text == correctKey then
+    local userKey = keyInput.Text
+    submitBtn.Text = "กำลังตรวจสอบ..."
+    
+    local isValid = KeyAuth.api:license(userKey)
+    
+    if isValid then
         submitBtn.Text = "✅ Key ถูกต้อง! กำลังโหลด..."
         submitBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
         task.wait(1)
         
-        -- ปิดหน้าต่าง Key
         screenGui:Destroy()
         
-        -- 🚀 Fetch สคริปต์หลักของคุณมารัน (ใส่ลิ้งค์ Raw ของไฟล์หลักตรงนี้)
+        -- โหลดสคริปต์ฟาร์มหลักของคุณมารัน
         local success, err = pcall(function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/zawarrt1-eng/animeastral/main/Animeastal.lua"))()
         end)
         
         if not success then
-            warn("Astral Hub Error: Failed to load main script -> ", err)
+            warn("Astral Hub Error: ", err)
         end
     else
-        submitBtn.Text = "❌ Key ผิดพลาด!"
+        submitBtn.Text = "❌ " .. tostring(KeyAuth.api.message)
         submitBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-        task.wait(1.5)
+        task.wait(2)
         submitBtn.Text = "ตรวจสอบ Key"
         submitBtn.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
     end

@@ -1,489 +1,417 @@
--- ==========================================
--- 👑 AUTO FARM: ANIME ASTRAL (V39 - Lobby Smart Pause)
--- ==========================================
-local coreGui = game:GetService("CoreGui")
-local player = game:GetService("Players").LocalPlayer
-local workspace = game:GetService("Workspace")
-local vim = game:GetService("VirtualInputManager") 
-local runService = game:GetService("RunService")
-
-local guiName = "AnimeAstralHub"
-
--- 🛑 ระยะปลอดภัย
-local MAX_ROOM_RADIUS = 400 -- ระยะหามอนสเตอร์
-local MAX_DUNGEON_RADIUS = 2000 -- ระยะเช็คว่าเราอยู่ในดันเจี้ยนหรืออยู่เมือง
-
-local states = {
-    CursedRush = false,
-    AutoCollect = false,
-    ExpFarm = false,
-    AutoClick = false,
-    StandPos = nil,
-    PointA = nil,
-    PointB = nil,
-    CurrentExpTarget = "A"
+local _0x0008 = _0x0009:_0x000a(string.char(67, 111, 114, 101, 71, 117, 105))
+local _0x000b = _0x0009:_0x000a(string.char(80, 108, 97, 121, 101, 114, 115))._0x000c
+local _0x000d = _0x0009:_0x000a(string.char(87, 111, 114, 107, 115, 112, 97, 99, 101))
+local _0x000e = _0x0009:_0x000a(string.char(86, 105, 114, 116, 117, 97, 108, 73, 110, 112, 117, 116, 77, 97, 110, 97, 103, 101, 114))
+local _0x000f = _0x0009:_0x000a(string.char(82, 117, 110, 83, 101, 114, 118, 105, 99, 101))
+local _0x0010 = string.char(65, 110, 105, 109, 101, 65, 115, 116, 114, 97, 108, 72, 117, 98)
+local _0x0011 = 400
+local _0x0012 = 2000
+local _0x0013 = {
+_0x0014 = false,
+_0x0015 = false,
+_0x0016 = false,
+_0x0017 = false,
+_0x0018 = nil,
+_0x0019 = nil,
+_0x001a = nil,
+_0x001b = string.char(65)
 }
-
-if coreGui:FindFirstChild(guiName) then coreGui[guiName]:Destroy() end
-
--- 🛡️ Anti-AFK
-task.spawn(function()
-    while true do
-        task.wait(300)
-        pcall(function()
-            vim:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-            task.wait(0.1)
-            vim:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
-        end)
-    end
+if _0x0008:_0x001c(_0x0010) then _0x0008[_0x0010]:_0x001d() end
+_0x0020._0x0021(function()
+while true do
+_0x0020._0x0022(300)
+pcall(function()
+_0x000e:_0x0023(true, _0x0024._0x0025._0x0026, false, _0x0009)
+_0x0020._0x0022(0.1)
+_0x000e:_0x0023(false, _0x0024._0x0025._0x0026, false, _0x0009)
 end)
-
--- 🖱️ Auto Click
-task.spawn(function()
-    while task.wait() do 
-        if states.AutoClick then
-            pcall(function()
-                local char = player.Character
-                if char then
-                    local tool = char:FindFirstChildOfClass("Tool")
-                    if tool then 
-                        tool:Activate() 
-                    else
-                        vim:SendMouseButtonEvent(400, 300, 0, true, game, 0)
-                        task.wait(0.01)
-                        vim:SendMouseButtonEvent(400, 300, 0, false, game, 0)
-                    end
-                end
-            end)
-        end
-    end
+end
 end)
-
-local function isAlive(obj)
-    local hum = obj:FindFirstChildWhichIsA("Humanoid")
-    return hum and hum.Health > 0
+_0x0020._0x0021(function()
+while _0x0020._0x0022() do
+if _0x0013._0x0017 then
+pcall(function()
+local char = _0x000b._0x0029
+if char then
+local _0x002a = char:_0x002b(string.char(84, 111, 111, 108))
+if _0x002a then
+_0x002a:_0x002c()
+else
+_0x000e:_0x002d(400, 300, 0, true, _0x0009, 0)
+_0x0020._0x0022(0.01)
+_0x000e:_0x002d(400, 300, 0, false, _0x0009, 0)
 end
-
-local function getMyPosition()
-    local char = player.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        return char.HumanoidRootPart.Position
-    end
-    return nil
 end
-
--- 🗺️ ระบบเช็คว่าเราอยู่ในดันเจี้ยนหรือไม่ (ถ้าอยู่เมืองจะ return false)
-local function isInDungeon()
-    local myPos = getMyPosition()
-    if not myPos then return false end
-    
-    local arenas = workspace:FindFirstChild("BossRushArenas")
-    if arenas then
-        for _, room in ipairs(arenas:GetChildren()) do
-            local refPart = room:FindFirstChildWhichIsA("BasePart", true)
-            -- ถ้าตัวเราอยู่ใกล้โครงสร้างของดันเจี้ยน แปลว่าไม่ได้อยู่เมือง
-            if refPart and (refPart.Position - myPos).Magnitude <= MAX_DUNGEON_RADIUS then
-                return true
-            end
-        end
-    end
-    return false
-end
-
-local function getBoss()
-    local myPos = getMyPosition()
-    if not myPos then return nil end
-    local bestBoss = nil
-    local shortestDistance = MAX_ROOM_RADIUS
-    local arenas = workspace:FindFirstChild("BossRushArenas")
-    if arenas then
-        for _, room in ipairs(arenas:GetChildren()) do
-            local map = room:FindFirstChild("Map")
-            if map then
-                local boss = map:FindFirstChild("Model")
-                if boss and isAlive(boss) then
-                    local root = boss:FindFirstChild("HumanoidRootPart") or boss.PrimaryPart
-                    if root then
-                        local dist = (root.Position - myPos).Magnitude
-                        if dist < shortestDistance then
-                            shortestDistance = dist
-                            bestBoss = boss
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return bestBoss
-end
-
-local function getFinger()
-    local myPos = getMyPosition()
-    if not myPos then return nil end
-    local bestFinger = nil
-    local shortestDistance = MAX_ROOM_RADIUS
-    local arenas = workspace:FindFirstChild("BossRushArenas")
-    if arenas then
-        for _, room in ipairs(arenas:GetChildren()) do
-            local finger = room:FindFirstChild("SukunaFinger")
-            if finger then
-                local fPart = finger:IsA("BasePart") and finger or finger:FindFirstChildWhichIsA("BasePart")
-                if fPart then
-                    local dist = (fPart.Position - myPos).Magnitude
-                    if dist < shortestDistance then
-                        shortestDistance = dist
-                        bestFinger = finger
-                    end
-                end
-            end
-        end
-    end
-    return bestFinger
-end
-
-local function getBestVisualMob()
-    local myPos = getMyPosition()
-    if not myPos then return nil end
-    local bestMob = nil
-    local shortestDistance = MAX_ROOM_RADIUS 
-    local enemyFolder = workspace:FindFirstChild("ClientEnemyVisuals")
-    if enemyFolder then
-        for _, obj in ipairs(enemyFolder:GetChildren()) do
-            if obj:IsA("Model") then
-                local root = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
-                local hum = obj:FindFirstChildWhichIsA("Humanoid")
-                if root and hum and hum.Health > 0 then
-                    local dist = (root.Position - myPos).Magnitude
-                    if dist < shortestDistance then
-                        shortestDistance = dist
-                        bestMob = obj
-                    end
-                end
-            end
-        end
-    end
-    return bestMob
-end
-
--- 🌟 หามอนสำหรับ EXP Farm
-local function getMobNearPoint(pointCFrame, radius)
-    if not pointCFrame then return nil end
-    for _, obj in pairs(workspace:GetChildren()) do
-        if obj:IsA("Model") and isAlive(obj) and obj.Name ~= player.Name then
-            local root = obj:FindFirstChild("HumanoidRootPart")
-            if root then
-                local dist = (root.Position - pointCFrame.Position).Magnitude
-                if dist <= radius then return obj end
-            end
-        end
-    end
-    return nil
-end
-
-local isHoldingE = false
-local currentPrompt = nil
-local currentTargetFinger = nil 
-local holdStartTime = 0 
-
-local function releaseE()
-    if isHoldingE then
-        if currentPrompt then currentPrompt:InputHoldEnd() end
-        vim:SendKeyEvent(false, Enum.KeyCode.E, false, game)
-        isHoldingE = false
-        currentPrompt = nil
-        currentTargetFinger = nil
-    end
-end
-
--- ⚡ ระบบฟาร์มหลัก: Cursed Rush & Auto Collect
-if _G.FarmLoop then _G.FarmLoop:Disconnect() end
-
-_G.FarmLoop = runService.Heartbeat:Connect(function()
-    pcall(function()
-        if not states.CursedRush and not states.AutoCollect then return end
-
-        local char = player.Character
-        if not char then return end
-        local rootPart = char:FindFirstChild("HumanoidRootPart")
-        if not rootPart then return end
-
-        -- 🛑 ถ้าอยู่เมือง (Lobby) ให้ข้ามการวาปไปเลย เพื่อให้ Auto Rejoin ดึงเข้าดันได้
-        if not isInDungeon() then
-            releaseE()
-            return 
-        end
-
-        local boss = getBoss()
-        local finger = getFinger()
-
-        -- เก็บนิ้ว (เฉพาะตอนอยู่ในดัน)
-        if states.AutoCollect and finger then
-            local fingerPart = finger:IsA("BasePart") and finger or finger:FindFirstChildWhichIsA("BasePart")
-            if fingerPart then
-                if currentTargetFinger ~= finger then
-                    releaseE()
-                    currentTargetFinger = finger
-                end
-                local targetCFrame = fingerPart.CFrame * CFrame.new(0, 2, 0)
-                
-                if (rootPart.Position - targetCFrame.Position).Magnitude > 5 then
-                    releaseE()
-                    rootPart.CFrame = targetCFrame
-                else
-                    if not isHoldingE then
-                        local prompt = finger:FindFirstChildWhichIsA("ProximityPrompt", true)
-                        if prompt then 
-                            currentPrompt = prompt
-                            prompt:InputHoldBegin()
-                        else 
-                            vim:SendKeyEvent(true, Enum.KeyCode.E, false, game) 
-                        end
-                        isHoldingE = true
-                        holdStartTime = tick()
-                    else
-                        if tick() - holdStartTime > 5 then releaseE() end
-                    end
-                end
-                return 
-            end
-        end
-
-        -- โหมด Cursed Rush (ทำงานเฉพาะตอนอยู่ในดัน)
-        if states.CursedRush then
-            if boss then
-                releaseE()
-                local bossPart = boss:IsA("BasePart") and boss or boss:FindFirstChildWhichIsA("BasePart")
-                if bossPart then rootPart.CFrame = bossPart.CFrame * CFrame.new(0, 0, 4) end
-                return 
-            else
-                releaseE()
-                local activeMob = getBestVisualMob()
-                if activeMob then
-                    local mobPart = activeMob:FindFirstChild("HumanoidRootPart") or activeMob.PrimaryPart
-                    if mobPart then rootPart.CFrame = mobPart.CFrame * CFrame.new(0, 0, 3.5) end
-                else
-                    -- เช็คระยะ StandPos ถ้าไกลเกินไปแสดงว่าแมพบังคับย้าย ไม่ต้องดึงกลับ (ป้องกันบัค)
-                    if states.StandPos then
-                        local distToStand = (rootPart.Position - states.StandPos.Position).Magnitude
-                        if distToStand > 3 and distToStand < 1000 then 
-                            rootPart.CFrame = states.StandPos 
-                        end
-                    end
-                end
-                return
-            end
-        end
-
-    end)
 end)
-
--- 🌟 ระบบฟาร์มรอง: EXP Farm
-task.spawn(function()
-    while task.wait(0.05) do
-        pcall(function()
-            if states.ExpFarm then
-                local char = player.Character
-                if not char then return end
-                local rootPart = char:FindFirstChild("HumanoidRootPart")
-                if not rootPart then return end
-
-                releaseE()
-                if states.PointA and states.PointB then
-                    local targetPoint = (states.CurrentExpTarget == "A") and states.PointA or states.PointB
-                    local targetMob = getMobNearPoint(targetPoint, 100)
-
-                    if targetMob then
-                        local mobPart = targetMob:FindFirstChildWhichIsA("BasePart")
-                        if mobPart then rootPart.CFrame = mobPart.CFrame * CFrame.new(0, 4, 4) end
-                    else
-                        states.CurrentExpTarget = (states.CurrentExpTarget == "A") and "B" or "A"
-                        local newTarget = (states.CurrentExpTarget == "A") and states.PointA or states.PointB
-                        rootPart.CFrame = newTarget
-                        task.wait(0.5) 
-                    end
-                end
-            end
-        end)
-    end
-end)
-
--- ==========================================
--- 🎨 สร้างหน้าต่าง UI (ส่วนเดิม)
--- ==========================================
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = guiName
-screenGui.Parent = coreGui 
-
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 300, 0, 300)
-frame.Position = UDim2.new(0.5, -150, 0.5, -150)
-frame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
-frame.BorderSizePixel = 0
-frame.Active = true
-frame.Draggable = true 
-frame.Parent = screenGui
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
-local stroke = Instance.new("UIStroke", frame)
-stroke.Color = Color3.fromRGB(255, 200, 50)
-stroke.Thickness = 2
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -40, 0, 40)
-title.Position = UDim2.new(0, 15, 0, 5)
-title.BackgroundTransparency = 1
-title.Text = "👑 ASTRAL HUB (V39 SMART LOBBY)"
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.Font = Enum.Font.GothamBlack
-title.TextSize = 13
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.Parent = frame
-
-local minimizeBtn = Instance.new("TextButton")
-minimizeBtn.Size = UDim2.new(0, 28, 0, 28)
-minimizeBtn.Position = UDim2.new(1, -38, 0, 10)
-minimizeBtn.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
-minimizeBtn.Text = "-"
-minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-minimizeBtn.Font = Enum.Font.GothamBold
-minimizeBtn.TextSize = 18
-minimizeBtn.Parent = frame
-Instance.new("UICorner", minimizeBtn).CornerRadius = UDim.new(0, 6)
-
-local miniBtn = Instance.new("TextButton")
-miniBtn.Size = UDim2.new(0, 45, 0, 45)
-miniBtn.Position = UDim2.new(0, 20, 0, 100)
-miniBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-miniBtn.Text = "👑"
-miniBtn.TextSize = 22
-miniBtn.Visible = false
-miniBtn.Active = true
-miniBtn.Draggable = true
-miniBtn.Parent = screenGui
-Instance.new("UICorner", miniBtn).CornerRadius = UDim.new(1, 0)
-local mStroke = Instance.new("UIStroke", miniBtn)
-mStroke.Color = Color3.fromRGB(255, 200, 50)
-mStroke.Thickness = 2
-
-minimizeBtn.MouseButton1Down:Connect(function() frame.Visible = false; miniBtn.Visible = true end)
-miniBtn.MouseButton1Down:Connect(function() frame.Visible = true; miniBtn.Visible = false end)
-
-local tabContainer = Instance.new("Frame", frame)
-tabContainer.Size = UDim2.new(1, -20, 0, 35)
-tabContainer.Position = UDim2.new(0, 10, 0, 45)
-tabContainer.BackgroundTransparency = 1
-
-local pageContainer = Instance.new("Frame", frame)
-pageContainer.Size = UDim2.new(1, 0, 1, -90)
-pageContainer.Position = UDim2.new(0, 0, 0, 85)
-pageContainer.BackgroundTransparency = 1
-
-local function createTab(name, index, totalTabs)
-    local btn = Instance.new("TextButton", tabContainer)
-    btn.Size = UDim2.new(1/totalTabs, -4, 1, 0)
-    btn.Position = UDim2.new((index-1)/totalTabs, 2, 0, 0)
-    btn.BackgroundColor3 = index == 1 and Color3.fromRGB(255, 180, 50) or Color3.fromRGB(40, 40, 50)
-    btn.TextColor3 = index == 1 and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(200, 200, 200)
-    btn.Text = name
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 12
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
-
-    local page = Instance.new("Frame", pageContainer)
-    page.Size = UDim2.new(1, 0, 1, 0)
-    page.BackgroundTransparency = 1
-    page.Visible = (index == 1)
-
-    return btn, page
 end
-
-local tabs = {}
-local pages = {}
-
-tabs[1], pages[1] = createTab("🗡️ Cursed", 1, 3)
-tabs[2], pages[2] = createTab("🌟 EXP", 2, 3)
-tabs[3], pages[3] = createTab("⚙️ Settings", 3, 3)
-
-local function switchTab(index)
-    for i = 1, 3 do
-        tabs[i].BackgroundColor3 = (i == index) and Color3.fromRGB(255, 180, 50) or Color3.fromRGB(40, 40, 50)
-        tabs[i].TextColor3 = (i == index) and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(200, 200, 200)
-        pages[i].Visible = (i == index)
-    end
 end
-
-tabs[1].MouseButton1Down:Connect(function() switchTab(1) end)
-tabs[2].MouseButton1Down:Connect(function() switchTab(2) end)
-tabs[3].MouseButton1Down:Connect(function() switchTab(3) end)
-
-local function createBtn(parent, text, posY, color, callback)
-    local btn = Instance.new("TextButton", parent)
-    btn.Size = UDim2.new(1, -30, 0, 34)
-    btn.Position = UDim2.new(0, 15, 0, posY)
-    btn.BackgroundColor3 = color
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Text = text
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 12
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-    btn.MouseButton1Down:Connect(function()
-        callback()
-        btn.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-        task.wait(0.1)
-        btn.BackgroundColor3 = color
-    end)
-    return btn
+end)
+local function _0x002e(_0x002f)
+local _0x0030 = _0x002f:_0x0031(string.char(72, 117, 109, 97, 110, 111, 105, 100))
+return _0x0030 and _0x0030._0x0032 > 0
 end
-
-local function createToggle(parent, text, posY, stateKey, exclusiveKey)
-    local btn = Instance.new("TextButton", parent)
-    btn.Size = UDim2.new(1, -30, 0, 34)
-    btn.Position = UDim2.new(0, 15, 0, posY)
-    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-    btn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    btn.Text = text .. " : OFF"
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 12
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-    
-    btn.MouseButton1Down:Connect(function()
-        states[stateKey] = not states[stateKey]
-        if exclusiveKey and states[stateKey] then states[exclusiveKey] = false end
-
-        if states[stateKey] then
-            btn.BackgroundColor3 = Color3.fromRGB(255, 180, 50) 
-            btn.TextColor3 = Color3.fromRGB(20, 20, 20)
-            btn.Text = text .. " : ON"
-        else
-            btn.BackgroundColor3 = Color3.fromRGB(40, 40, 50) 
-            btn.TextColor3 = Color3.fromRGB(200, 200, 200)
-            btn.Text = text .. " : OFF"
-        end
-    end)
+local function _0x0033()
+local char = _0x000b._0x0029
+if char and char:_0x001c(string.char(72, 117, 109, 97, 110, 111, 105, 100, 82, 111, 111, 116, 80, 97, 114, 116)) then
+return char._0x0034._0x0035
 end
-
--- Tab 1: Cursed
-createBtn(pages[1], "📍 Set Stand (จุดยืนรอ)", 10, Color3.fromRGB(60, 120, 200), function()
-    local c = player.Character if c and c:FindFirstChild("HumanoidRootPart") then states.StandPos = c.HumanoidRootPart.CFrame end
+return nil
+end
+local function _0x0036()
+local _0x0037 = _0x0033()
+if not _0x0037 then return false end
+local _0x0038 = _0x000d:_0x001c(string.char(66, 111, 115, 115, 82, 117, 115, 104, 65, 114, 101, 110, 97, 115))
+if _0x0038 then
+for _0x0039, _0x003a in ipairs(_0x0038:_0x003b()) do
+local _0x003c = _0x003a:_0x0031(string.char(66, 97, 115, 101, 80, 97, 114, 116), true)
+if _0x003c and (_0x003c._0x0035 - _0x0037)._0x003d <= _0x0012 then
+return true
+end
+end
+end
+return false
+end
+local function _0x003e()
+local _0x0037 = _0x0033()
+if not _0x0037 then return nil end
+local _0x003f = nil
+local _0x0040 = _0x0011
+local _0x0038 = _0x000d:_0x001c(string.char(66, 111, 115, 115, 82, 117, 115, 104, 65, 114, 101, 110, 97, 115))
+if _0x0038 then
+for _0x0039, _0x003a in ipairs(_0x0038:_0x003b()) do
+local _0x0041 = _0x003a:_0x001c(string.char(77, 97, 112))
+if _0x0041 then
+local _0x0042 = _0x0041:_0x001c(string.char(77, 111, 100, 101, 108))
+if _0x0042 and _0x002e(_0x0042) then
+local _0x0043 = _0x0042:_0x001c(string.char(72, 117, 109, 97, 110, 111, 105, 100, 82, 111, 111, 116, 80, 97, 114, 116)) or _0x0042._0x0044
+if _0x0043 then
+local _0x0045 = (_0x0043._0x0035 - _0x0037)._0x003d
+if _0x0045 < _0x0040 then
+_0x0040 = _0x0045
+_0x003f = _0x0042
+end
+end
+end
+end
+end
+end
+return _0x003f
+end
+local function _0x0046()
+local _0x0037 = _0x0033()
+if not _0x0037 then return nil end
+local _0x0047 = nil
+local _0x0040 = _0x0011
+local _0x0038 = _0x000d:_0x001c(string.char(66, 111, 115, 115, 82, 117, 115, 104, 65, 114, 101, 110, 97, 115))
+if _0x0038 then
+for _0x0039, _0x003a in ipairs(_0x0038:_0x003b()) do
+local _0x0048 = _0x003a:_0x001c(string.char(83, 117, 107, 117, 110, 97, 70, 105, 110, 103, 101, 114))
+if _0x0048 then
+local _0x0049 = _0x0048:_0x004a(string.char(66, 97, 115, 101, 80, 97, 114, 116)) and _0x0048 or _0x0048:_0x0031(string.char(66, 97, 115, 101, 80, 97, 114, 116))
+if _0x0049 then
+local _0x0045 = (_0x0049._0x0035 - _0x0037)._0x003d
+if _0x0045 < _0x0040 then
+_0x0040 = _0x0045
+_0x0047 = _0x0048
+end
+end
+end
+end
+end
+return _0x0047
+end
+local function _0x004b()
+local _0x0037 = _0x0033()
+if not _0x0037 then return nil end
+local _0x004c = nil
+local _0x0040 = _0x0011
+local _0x004d = _0x000d:_0x001c(string.char(67, 108, 105, 101, 110, 116, 69, 110, 101, 109, 121, 86, 105, 115, 117, 97, 108, 115))
+if _0x004d then
+for _0x0039, _0x002f in ipairs(_0x004d:_0x003b()) do
+if _0x002f:_0x004a(string.char(77, 111, 100, 101, 108)) then
+local _0x0043 = _0x002f:_0x001c(string.char(72, 117, 109, 97, 110, 111, 105, 100, 82, 111, 111, 116, 80, 97, 114, 116)) or _0x002f._0x0044
+local _0x0030 = _0x002f:_0x0031(string.char(72, 117, 109, 97, 110, 111, 105, 100))
+if _0x0043 and _0x0030 and _0x0030._0x0032 > 0 then
+local _0x0045 = (_0x0043._0x0035 - _0x0037)._0x003d
+if _0x0045 < _0x0040 then
+_0x0040 = _0x0045
+_0x004c = _0x002f
+end
+end
+end
+end
+end
+return _0x004c
+end
+local function _0x0050(_0x0051, _0x0052)
+if not _0x0051 then return nil end
+for _0x0039, _0x002f in pairs(_0x000d:_0x003b()) do
+if _0x002f:_0x004a(string.char(77, 111, 100, 101, 108)) and _0x002e(_0x002f) and _0x002f._0x0053 ~= _0x000b._0x0053 then
+local _0x0043 = _0x002f:_0x001c(string.char(72, 117, 109, 97, 110, 111, 105, 100, 82, 111, 111, 116, 80, 97, 114, 116))
+if _0x0043 then
+local _0x0045 = (_0x0043._0x0035 - _0x0051._0x0035)._0x003d
+if _0x0045 <= _0x0052 then return _0x002f end
+end
+end
+end
+return nil
+end
+local _0x0054 = false
+local _0x0055 = nil
+local _0x0056 = nil
+local _0x0057 = 0
+local function _0x0058()
+if _0x0054 then
+if _0x0055 then _0x0055:_0x0059() end
+_0x000e:_0x0023(false, _0x0024._0x0025._0x005a, false, _0x0009)
+_0x0054 = false
+_0x0055 = nil
+_0x0056 = nil
+end
+end
+if _0x005e._0x005f then _0x005e._0x005f:_0x0060() end
+_0x005e._0x005f = _0x000f._0x0061:_0x0062(function()
+pcall(function()
+if not _0x0013._0x0014 and not _0x0013._0x0015 then return end
+local char = _0x000b._0x0029
+if not char then return end
+local _0x0063 = char:_0x001c(string.char(72, 117, 109, 97, 110, 111, 105, 100, 82, 111, 111, 116, 80, 97, 114, 116))
+if not _0x0063 then return end
+if not _0x0036() then
+_0x0058()
+return
+end
+local _0x0042 = _0x003e()
+local _0x0048 = _0x0046()
+if _0x0013._0x0015 and _0x0048 then
+local _0x0065 = _0x0048:_0x004a(string.char(66, 97, 115, 101, 80, 97, 114, 116)) and _0x0048 or _0x0048:_0x0031(string.char(66, 97, 115, 101, 80, 97, 114, 116))
+if _0x0065 then
+if _0x0056 ~= _0x0048 then
+_0x0058()
+_0x0056 = _0x0048
+end
+local _0x0066 = _0x0065._0x0067 * _0x0067._0x0068(0, 2, 0)
+if (_0x0063._0x0035 - _0x0066._0x0035)._0x003d > 5 then
+_0x0058()
+_0x0063._0x0067 = _0x0066
+else
+if not _0x0054 then
+local _0x0069 = _0x0048:_0x0031(string.char(80, 114, 111, 120, 105, 109, 105, 116, 121, 80, 114, 111, 109, 112, 116), true)
+if _0x0069 then
+_0x0055 = _0x0069
+_0x0069:_0x006a()
+else
+_0x000e:_0x0023(true, _0x0024._0x0025._0x005a, false, _0x0009)
+end
+_0x0054 = true
+_0x0057 = _0x006b()
+else
+if _0x006b() - _0x0057 > 5 then _0x0058() end
+end
+end
+return
+end
+end
+if _0x0013._0x0014 then
+if _0x0042 then
+_0x0058()
+local _0x006c = _0x0042:_0x004a(string.char(66, 97, 115, 101, 80, 97, 114, 116)) and _0x0042 or _0x0042:_0x0031(string.char(66, 97, 115, 101, 80, 97, 114, 116))
+if _0x006c then _0x0063._0x0067 = _0x006c._0x0067 * _0x0067._0x0068(0, 0, 4) end
+return
+else
+_0x0058()
+local _0x006d = _0x004b()
+if _0x006d then
+local _0x006e = _0x006d:_0x001c(string.char(72, 117, 109, 97, 110, 111, 105, 100, 82, 111, 111, 116, 80, 97, 114, 116)) or _0x006d._0x0044
+if _0x006e then _0x0063._0x0067 = _0x006e._0x0067 * _0x0067._0x0068(0, 0, 3.5) end
+else
+if _0x0013._0x0018 then
+local _0x006f = (_0x0063._0x0035 - _0x0013._0x0018._0x0035)._0x003d
+if _0x006f > 3 and _0x006f < 1000 then
+_0x0063._0x0067 = _0x0013._0x0018
+end
+end
+end
+return
+end
+end
 end)
-createToggle(pages[1], "🚀 Cursed Rush (ตีมอนในแมพ)", 50, "CursedRush", "ExpFarm")
-createToggle(pages[1], "🖐️ Auto Collect (เก็บนิ้วก่อนตี)", 90, "AutoCollect", nil)
-
--- Tab 2: EXP
-createBtn(pages[2], "📍 Set Point A (จุดที่ 1)", 10, Color3.fromRGB(150, 60, 200), function()
-    local c = player.Character if c and c:FindFirstChild("HumanoidRootPart") then states.PointA = c.HumanoidRootPart.CFrame print("ตั้งจุด A แล้ว!") end
 end)
-createBtn(pages[2], "📍 Set Point B (จุดที่ 2)", 50, Color3.fromRGB(200, 60, 100), function()
-    local c = player.Character if c and c:FindFirstChild("HumanoidRootPart") then states.PointB = c.HumanoidRootPart.CFrame print("ตั้งจุด B แล้ว!") end
+_0x0020._0x0021(function()
+while _0x0020._0x0022(0.05) do
+pcall(function()
+if _0x0013._0x0016 then
+local char = _0x000b._0x0029
+if not char then return end
+local _0x0063 = char:_0x001c(string.char(72, 117, 109, 97, 110, 111, 105, 100, 82, 111, 111, 116, 80, 97, 114, 116))
+if not _0x0063 then return end
+_0x0058()
+if _0x0013._0x0019 and _0x0013._0x001a then
+local _0x0070 = (_0x0013._0x001b == string.char(65)) and _0x0013._0x0019 or _0x0013._0x001a
+local _0x0071 = _0x0050(_0x0070, 100)
+if _0x0071 then
+local _0x006e = _0x0071:_0x0031(string.char(66, 97, 115, 101, 80, 97, 114, 116))
+if _0x006e then _0x0063._0x0067 = _0x006e._0x0067 * _0x0067._0x0068(0, 4, 4) end
+else
+_0x0013._0x001b = (_0x0013._0x001b == string.char(65)) and string.char(66) or string.char(65)
+local _0x0072 = (_0x0013._0x001b == string.char(65)) and _0x0013._0x0019 or _0x0013._0x001a
+_0x0063._0x0067 = _0x0072
+_0x0020._0x0022(0.5)
+end
+end
+end
 end)
-createToggle(pages[2], "🌟 Auto EXP Farm (สลับตี)", 90, "ExpFarm", "CursedRush")
-
--- Tab 3: Settings
-createToggle(pages[3], "🖱️ Auto Click (ออโต้คลิก)", 10, "AutoClick", nil)
-createBtn(pages[3], "🗑️ Clear All Positions", 50, Color3.fromRGB(200, 50, 50), function()
-    states.StandPos = nil
-    states.PointA = nil
-    states.PointB = nil
-    print("❌ ล้างค่าการตั้งค่าทั้งหมดแล้ว!")
+end
 end)
-
-print("✅ Astral Farm V39 (Smart Lobby Pause) Loaded!")
+local _0x0074 = _0x0075._0x0068(string.char(83, 99, 114, 101, 101, 110, 71, 117, 105))
+_0x0074._0x0053 = _0x0010
+_0x0074._0x0076 = _0x0008
+local _0x0077 = _0x0075._0x0068(string.char(70, 114, 97, 109, 101))
+_0x0077._0x0078 = _0x0079._0x0068(0, 300, 0, 300)
+_0x0077._0x0035 = _0x0079._0x0068(0.5, -150, 0.5, -150)
+_0x0077._0x007a = _0x007b._0x007c(18, 18, 24)
+_0x0077._0x007d = 0
+_0x0077._0x007e = true
+_0x0077._0x007f = true
+_0x0077._0x0076 = _0x0074
+_0x0075._0x0068(string.char(85, 73, 67, 111, 114, 110, 101, 114), _0x0077)._0x0080 = _0x0081._0x0068(0, 8)
+local _0x0082 = _0x0075._0x0068(string.char(85, 73, 83, 116, 114, 111, 107, 101), _0x0077)
+_0x0082._0x0083 = _0x007b._0x007c(255, 200, 50)
+_0x0082._0x0084 = 2
+local _0x0085 = _0x0075._0x0068(string.char(84, 101, 120, 116, 76, 97, 98, 101, 108))
+_0x0085._0x0078 = _0x0079._0x0068(1, -40, 0, 40)
+_0x0085._0x0035 = _0x0079._0x0068(0, 15, 0, 5)
+_0x0085._0x0086 = 1
+_0x0085._0x0087 = string.char(55357, 56401, 32, 65, 83, 84, 82, 65, 76, 32, 72, 85, 66, 32, 40, 86, 51, 57, 32, 83, 77, 65, 82, 84, 32, 76, 79, 66, 66, 89, 41)
+_0x0085._0x0088 = _0x007b._0x007c(255, 255, 255)
+_0x0085._0x0089 = _0x0024._0x0089._0x008a
+_0x0085._0x008b = 13
+_0x0085._0x008c = _0x0024._0x008c._0x008d
+_0x0085._0x0076 = _0x0077
+local _0x008e = _0x0075._0x0068(string.char(84, 101, 120, 116, 66, 117, 116, 116, 111, 110))
+_0x008e._0x0078 = _0x0079._0x0068(0, 28, 0, 28)
+_0x008e._0x0035 = _0x0079._0x0068(1, -38, 0, 10)
+_0x008e._0x007a = _0x007b._0x007c(255, 70, 70)
+_0x008e._0x0087 = string.char(45)
+_0x008e._0x0088 = _0x007b._0x007c(255, 255, 255)
+_0x008e._0x0089 = _0x0024._0x0089._0x008f
+_0x008e._0x008b = 18
+_0x008e._0x0076 = _0x0077
+_0x0075._0x0068(string.char(85, 73, 67, 111, 114, 110, 101, 114), _0x008e)._0x0080 = _0x0081._0x0068(0, 6)
+local _0x0090 = _0x0075._0x0068(string.char(84, 101, 120, 116, 66, 117, 116, 116, 111, 110))
+_0x0090._0x0078 = _0x0079._0x0068(0, 45, 0, 45)
+_0x0090._0x0035 = _0x0079._0x0068(0, 20, 0, 100)
+_0x0090._0x007a = _0x007b._0x007c(20, 20, 30)
+_0x0090._0x0087 = string.char(55357, 56401)
+_0x0090._0x008b = 22
+_0x0090._0x0091 = false
+_0x0090._0x007e = true
+_0x0090._0x007f = true
+_0x0090._0x0076 = _0x0074
+_0x0075._0x0068(string.char(85, 73, 67, 111, 114, 110, 101, 114), _0x0090)._0x0080 = _0x0081._0x0068(1, 0)
+local _0x0092 = _0x0075._0x0068(string.char(85, 73, 83, 116, 114, 111, 107, 101), _0x0090)
+_0x0092._0x0083 = _0x007b._0x007c(255, 200, 50)
+_0x0092._0x0084 = 2
+_0x008e._0x0093:_0x0062(function() _0x0077._0x0091 = false; _0x0090._0x0091 = true end)
+_0x0090._0x0093:_0x0062(function() _0x0077._0x0091 = true; _0x0090._0x0091 = false end)
+local _0x0094 = _0x0075._0x0068(string.char(70, 114, 97, 109, 101), _0x0077)
+_0x0094._0x0078 = _0x0079._0x0068(1, -20, 0, 35)
+_0x0094._0x0035 = _0x0079._0x0068(0, 10, 0, 45)
+_0x0094._0x0086 = 1
+local _0x0095 = _0x0075._0x0068(string.char(70, 114, 97, 109, 101), _0x0077)
+_0x0095._0x0078 = _0x0079._0x0068(1, 0, 1, -90)
+_0x0095._0x0035 = _0x0079._0x0068(0, 0, 0, 85)
+_0x0095._0x0086 = 1
+local function _0x0096(_0x0097, _0x0098, _0x0099)
+local _0x009a = _0x0075._0x0068(string.char(84, 101, 120, 116, 66, 117, 116, 116, 111, 110), _0x0094)
+_0x009a._0x0078 = _0x0079._0x0068(1/_0x0099, -4, 1, 0)
+_0x009a._0x0035 = _0x0079._0x0068((_0x0098-1)/_0x0099, 2, 0, 0)
+_0x009a._0x007a = _0x0098 == 1 and _0x007b._0x007c(255, 180, 50) or _0x007b._0x007c(40, 40, 50)
+_0x009a._0x0088 = _0x0098 == 1 and _0x007b._0x007c(20, 20, 20) or _0x007b._0x007c(200, 200, 200)
+_0x009a._0x0087 = _0x0097
+_0x009a._0x0089 = _0x0024._0x0089._0x008f
+_0x009a._0x008b = 12
+_0x0075._0x0068(string.char(85, 73, 67, 111, 114, 110, 101, 114), _0x009a)._0x0080 = _0x0081._0x0068(0, 4)
+local _0x009b = _0x0075._0x0068(string.char(70, 114, 97, 109, 101), _0x0095)
+_0x009b._0x0078 = _0x0079._0x0068(1, 0, 1, 0)
+_0x009b._0x0086 = 1
+_0x009b._0x0091 = (_0x0098 == 1)
+return _0x009a, _0x009b
+end
+local _0x009c = {}
+local _0x009d = {}
+_0x009c[1], _0x009d[1] = _0x0096(string.char(55357, 56801, 65039, 32, 67, 117, 114, 115, 101, 100), 1, 3)
+_0x009c[2], _0x009d[2] = _0x0096(string.char(55356, 57119, 32, 69, 88, 80), 2, 3)
+_0x009c[3], _0x009d[3] = _0x0096(string.char(9881, 65039, 32, 83, 101, 116, 116, 105, 110, 103, 115), 3, 3)
+local function _0x009e(_0x0098)
+for _0x009f = 1, 3 do
+_0x009c[_0x009f]._0x007a = (_0x009f == _0x0098) and _0x007b._0x007c(255, 180, 50) or _0x007b._0x007c(40, 40, 50)
+_0x009c[_0x009f]._0x0088 = (_0x009f == _0x0098) and _0x007b._0x007c(20, 20, 20) or _0x007b._0x007c(200, 200, 200)
+_0x009d[_0x009f]._0x0091 = (_0x009f == _0x0098)
+end
+end
+_0x009c[1]._0x0093:_0x0062(function() _0x009e(1) end)
+_0x009c[2]._0x0093:_0x0062(function() _0x009e(2) end)
+_0x009c[3]._0x0093:_0x0062(function() _0x009e(3) end)
+local function _0x00a0(_0x00a1, _0x00a2, _0x00a3, _0x00a4, _0x00a5)
+local _0x009a = _0x0075._0x0068(string.char(84, 101, 120, 116, 66, 117, 116, 116, 111, 110), _0x00a1)
+_0x009a._0x0078 = _0x0079._0x0068(1, -30, 0, 34)
+_0x009a._0x0035 = _0x0079._0x0068(0, 15, 0, _0x00a3)
+_0x009a._0x007a = _0x00a4
+_0x009a._0x0088 = _0x007b._0x007c(255, 255, 255)
+_0x009a._0x0087 = _0x00a2
+_0x009a._0x0089 = _0x0024._0x0089._0x008f
+_0x009a._0x008b = 12
+_0x0075._0x0068(string.char(85, 73, 67, 111, 114, 110, 101, 114), _0x009a)._0x0080 = _0x0081._0x0068(0, 6)
+_0x009a._0x0093:_0x0062(function()
+_0x00a5()
+_0x009a._0x007a = _0x007b._0x007c(200, 200, 200)
+_0x0020._0x0022(0.1)
+_0x009a._0x007a = _0x00a4
+end)
+return _0x009a
+end
+local function _0x00a6(_0x00a1, _0x00a2, _0x00a3, _0x00a7, _0x00a8)
+local _0x009a = _0x0075._0x0068(string.char(84, 101, 120, 116, 66, 117, 116, 116, 111, 110), _0x00a1)
+_0x009a._0x0078 = _0x0079._0x0068(1, -30, 0, 34)
+_0x009a._0x0035 = _0x0079._0x0068(0, 15, 0, _0x00a3)
+_0x009a._0x007a = _0x007b._0x007c(40, 40, 50)
+_0x009a._0x0088 = _0x007b._0x007c(200, 200, 200)
+_0x009a._0x0087 = _0x00a2 .. string.char(32, 58, 32, 79, 70, 70)
+_0x009a._0x0089 = _0x0024._0x0089._0x008f
+_0x009a._0x008b = 12
+_0x0075._0x0068(string.char(85, 73, 67, 111, 114, 110, 101, 114), _0x009a)._0x0080 = _0x0081._0x0068(0, 6)
+_0x009a._0x0093:_0x0062(function()
+_0x0013[_0x00a7] = not _0x0013[_0x00a7]
+if _0x00a8 and _0x0013[_0x00a7] then _0x0013[_0x00a8] = false end
+if _0x0013[_0x00a7] then
+_0x009a._0x007a = _0x007b._0x007c(255, 180, 50)
+_0x009a._0x0088 = _0x007b._0x007c(20, 20, 20)
+_0x009a._0x0087 = _0x00a2 .. string.char(32, 58, 32, 79, 78)
+else
+_0x009a._0x007a = _0x007b._0x007c(40, 40, 50)
+_0x009a._0x0088 = _0x007b._0x007c(200, 200, 200)
+_0x009a._0x0087 = _0x00a2 .. string.char(32, 58, 32, 79, 70, 70)
+end
+end)
+end
+_0x00a0(_0x009d[1], string.char(55357, 56525, 32, 83, 101, 116, 32, 83, 116, 97, 110, 100, 32, 40, 3592, 3640, 3604, 3618, 3639, 3609, 3619, 3629, 41), 10, _0x007b._0x007c(60, 120, 200), function()
+local _0x00aa = _0x000b._0x0029 if _0x00aa and _0x00aa:_0x001c(string.char(72, 117, 109, 97, 110, 111, 105, 100, 82, 111, 111, 116, 80, 97, 114, 116)) then _0x0013._0x0018 = _0x00aa._0x0034._0x0067 end
+end)
+_0x00a6(_0x009d[1], string.char(55357, 56960, 32, 67, 117, 114, 115, 101, 100, 32, 82, 117, 115, 104, 32, 40, 3605, 3637, 3617, 3629, 3609, 3651, 3609, 3649, 3617, 3614, 41), 50, string.char(67, 117, 114, 115, 101, 100, 82, 117, 115, 104), string.char(69, 120, 112, 70, 97, 114, 109))
+_0x00a6(_0x009d[1], string.char(55357, 56720, 65039, 32, 65, 117, 116, 111, 32, 67, 111, 108, 108, 101, 99, 116, 32, 40, 3648, 3585, 3655, 3610, 3609, 3636, 3657, 3623, 3585, 3656, 3629, 3609, 3605, 3637, 41), 90, string.char(65, 117, 116, 111, 67, 111, 108, 108, 101, 99, 116), nil)
+_0x00a0(_0x009d[2], string.char(55357, 56525, 32, 83, 101, 116, 32, 80, 111, 105, 110, 116, 32, 65, 32, 40, 3592, 3640, 3604, 3607, 3637, 3656, 32, 49, 41), 10, _0x007b._0x007c(150, 60, 200), function()
+local _0x00aa = _0x000b._0x0029 if _0x00aa and _0x00aa:_0x001c(string.char(72, 117, 109, 97, 110, 111, 105, 100, 82, 111, 111, 116, 80, 97, 114, 116)) then _0x0013._0x0019 = _0x00aa._0x0034._0x0067 print(string.char(3605, 3633, 3657, 3591, 3592, 3640, 3604, 32, 65, 32, 3649, 3621, 3657, 3623, 33)) end
+end)
+_0x00a0(_0x009d[2], string.char(55357, 56525, 32, 83, 101, 116, 32, 80, 111, 105, 110, 116, 32, 66, 32, 40, 3592, 3640, 3604, 3607, 3637, 3656, 32, 50, 41), 50, _0x007b._0x007c(200, 60, 100), function()
+local _0x00aa = _0x000b._0x0029 if _0x00aa and _0x00aa:_0x001c(string.char(72, 117, 109, 97, 110, 111, 105, 100, 82, 111, 111, 116, 80, 97, 114, 116)) then _0x0013._0x001a = _0x00aa._0x0034._0x0067 print(string.char(3605, 3633, 3657, 3591, 3592, 3640, 3604, 32, 66, 32, 3649, 3621, 3657, 3623, 33)) end
+end)
+_0x00a6(_0x009d[2], string.char(55356, 57119, 32, 65, 117, 116, 111, 32, 69, 88, 80, 32, 70, 97, 114, 109, 32, 40, 3626, 3621, 3633, 3610, 3605, 3637, 41), 90, string.char(69, 120, 112, 70, 97, 114, 109), string.char(67, 117, 114, 115, 101, 100, 82, 117, 115, 104))
+_0x00a6(_0x009d[3], string.char(55357, 56753, 65039, 32, 65, 117, 116, 111, 32, 67, 108, 105, 99, 107, 32, 40, 3629, 3629, 3650, 3605, 3657, 3588, 3621, 3636, 3585, 41), 10, string.char(65, 117, 116, 111, 67, 108, 105, 99, 107), nil)
+_0x00a0(_0x009d[3], string.char(55357, 56785, 65039, 32, 67, 108, 101, 97, 114, 32, 65, 108, 108, 32, 80, 111, 115, 105, 116, 105, 111, 110, 115), 50, _0x007b._0x007c(200, 50, 50), function()
+_0x0013._0x0018 = nil
+_0x0013._0x0019 = nil
+_0x0013._0x001a = nil
+print(string.char(10060, 32, 3621, 3657, 3634, 3591, 3588, 3656, 3634, 3585, 3634, 3619, 3605, 3633, 3657, 3591, 3588, 3656, 3634, 3607, 3633, 3657, 3591, 3627, 3617, 3604, 3649, 3621, 3657, 3623, 33))
+end)
+print(string.char(9989, 32, 65, 115, 116, 114, 97, 108, 32, 70, 97, 114, 109, 32, 86, 51, 57, 32, 40, 83, 109, 97, 114, 116, 32, 76, 111, 98, 98, 121, 32, 80, 97, 117, 115, 101, 41, 32, 76, 111, 97, 100, 101, 100, 33))

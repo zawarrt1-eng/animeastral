@@ -9,7 +9,6 @@ local validKeys = {
 [string.char(65, 83, 84, 82, 65, 76, 45, 86, 73, 80, 45, 48, 48, 50)] = true
 }
 
--- 🎨 สร้างหน้าต่าง UI กรอก Key
 local screenGui = Instance.new("ScreenGui", coreGui)
 screenGui.Name = guiName
 

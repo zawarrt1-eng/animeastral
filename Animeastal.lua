@@ -17,7 +17,7 @@ local states = {
     CursedRush = false,
     ExpFarm = false,
     AutoClick = false,
-    AutoCollectItem = false,
+    AutoCollectItem = false, -- 📦 สวิตช์ครอบจักรวาล (เก็บทุกอย่าง)
     AutoFire = false,
 
     StandPos = nil,
@@ -503,80 +503,7 @@ task.spawn(function()
     end)
 end)
 
--- ==========================================
--- 🔥 ฟาร์มดันเจี้ยนไฟ (Fire Dungeon)
--- ==========================================
-task.spawn(function()
-    local currentTarget = nil
-    local clearedTargets = {} 
 
-    runService.Heartbeat:Connect(function()
-        if not states.AutoFire then
-            currentTarget = nil
-            clearedTargets = {}
-            return
-        end
-
-        pcall(function()
-            local char = player.Character
-            if not char then return end
-            local rootPart = char:FindFirstChild("HumanoidRootPart")
-            if not rootPart then return end
-
-            local enemyFolder = workspace:FindFirstChild("ClientEnemyVisuals")
-            if not enemyFolder then return end
-
-            if currentTarget then
-                local isModelValid = false
-                if currentTarget.Parent and currentTarget:IsA("Model") then
-                    local hum = currentTarget:FindFirstChild("Humanoid")
-                    local root = currentTarget:FindFirstChild("HumanoidRootPart")
-                    if hum and hum.Health > 0 and root then 
-                        isModelValid = true 
-                    end
-                end
-
-                if not isModelValid then
-                    clearedTargets[currentTarget] = true 
-                    currentTarget = nil
-                end
-            end
-
-            if not currentTarget then
-                local closestTarget = nil
-                local shortestDistance = math.huge
-
-                for _, obj in ipairs(enemyFolder:GetChildren()) do
-                    if obj:IsA("Model") and not clearedTargets[obj] then
-                        local hum = obj:FindFirstChild("Humanoid")
-                        local mobRoot = obj:FindFirstChild("HumanoidRootPart")
-                        
-                        if hum and mobRoot and hum.Health > 0 then
-                            local distance = (mobRoot.Position - rootPart.Position).Magnitude
-                            if distance < shortestDistance then
-                                shortestDistance = distance
-                                closestTarget = obj
-                            end
-                        end
-                    end
-                end
-
-                if closestTarget then
-                    currentTarget = closestTarget
-                else
-                    clearedTargets = {} 
-                end
-            end
-
-            if currentTarget then
-                local targetRoot = currentTarget:FindFirstChild("HumanoidRootPart")
-                if targetRoot then
-                    rootPart.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 3) 
-                end
-            end
-        end)
-    end)
-end)
 
 -- ==========================================
 -- 🎨 สร้างหน้าจอ UI (Astral Hub)
@@ -753,11 +680,9 @@ createToggle(pages[2], "🌟 Auto EXP Farm (สลับตี)", 90, "ExpFarm",
 -- Tab 3: Time Trial 
 createToggle(pages[3], "⏱️ Auto Time Trial Easy", 20, "AutoTrialEasy", nil)
 createToggle(pages[3], "⏱️ Auto Time Trial Medium", 70, "AutoTrialMedium", nil)
-createToggle(pages[3], "⏱️ Auto Time Trial Hard", 120, "AutoTrialHard", nil) 
+-- createToggle(pages[3], "⏱️ Auto Time Trial Hard", 120, "AutoTrialHard", nil) 
 
--- Tab 4: Meliodas & Special (บอส / เก็บของ)
-createToggle(pages[4], "🔥 Auto Fire Dungeon", 20, "AutoFire", nil)
-createToggle(pages[4], "📦 Auto Collect All (เก็บทุกอย่าง)", 70, "AutoCollectItem", nil) -- ใช้สวิตช์ครอบจักรวาลตัวนี้
+createToggle(pages[4], "📦 Auto Collect All (เก็บทุกอย่าง)", 70, "AutoCollectItem", nil) 
 
 -- Tab 5: Settings
 createToggle(pages[5], "🖱️ Auto Click (ออโต้คลิก)", 20, "AutoClick", nil)

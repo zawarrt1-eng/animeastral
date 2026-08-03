@@ -17,7 +17,7 @@ local states = {
     CursedRush = false,
     ExpFarm = false,
     AutoClick = false,
-    AutoCollectItem = false, -- 📦 สวิตช์ครอบจักรวาล (เก็บทุกอย่าง)
+    AutoCollectItem = false,
     AutoFire = false,
 
     StandPos = nil,

@@ -18,7 +18,7 @@ local states = {
     ExpFarm = false,
     AutoClick = false,
     AutoCollectItem = false, -- 📦 สวิตช์ครอบจักรวาล (เก็บทุกอย่าง)
-    AutoFire = false,
+   
 
     StandPos = nil,
     PointA = nil,
